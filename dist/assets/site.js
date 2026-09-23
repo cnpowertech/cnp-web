@@ -21,10 +21,10 @@ const header = `
       <select class="lang-select" aria-label="언어 선택"><option value="ko">한국어</option><option value="en">English</option><option value="vi">Tiếng Việt</option><option value="es">Español</option></select>
       <button class="menu-btn" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button>
     </div>
-    <div class="mobile-panel" aria-hidden="true">
-      <a href="${root}/company/">회사소개</a><a href="${root}/products/">제품소개</a><a href="${root}/support/">서비스·지원</a><a href="${root}/contact/">고객센터</a>
-    </div>
-  </header>`;
+  </header>
+  <div class="mobile-panel" aria-hidden="true" inert>
+    <a href="${root}/company/">회사소개</a><a href="${root}/products/">제품소개</a><a href="${root}/support/">서비스·지원</a><a href="${root}/contact/">고객센터</a>
+  </div>`;
 
 const footer = `
   <footer class="footer"><div class="wrap">
@@ -42,13 +42,20 @@ window.CNP_I18N?.init();
 
 const menuButton = document.querySelector('.menu-btn');
 const mobilePanel = document.querySelector('.mobile-panel');
-menuButton?.addEventListener('click', () => {
-  const open = mobilePanel.classList.toggle('open');
+function setMobileMenu(open) {
+  if (!menuButton || !mobilePanel) return;
+  mobilePanel.classList.toggle('open', open);
   document.body.classList.toggle('menu-open', open);
   menuButton.setAttribute('aria-expanded', String(open));
   menuButton.setAttribute('aria-label', window.CNP_I18N?.t(open ? '메뉴 닫기' : '메뉴 열기') || (open ? '메뉴 닫기' : '메뉴 열기'));
   mobilePanel.setAttribute('aria-hidden', String(!open));
-});
+  mobilePanel.inert = !open;
+}
+menuButton?.addEventListener('click', () => setMobileMenu(!mobilePanel?.classList.contains('open')));
+mobilePanel?.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMobileMenu(false)));
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 980) setMobileMenu(false);
+}, { passive: true });
 
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('visible'));
