@@ -97,69 +97,45 @@ const selectedFile = document.querySelector('[data-selected-file]');
 const adminModal = document.querySelector('[data-admin-modal]');
 const adminLogin = document.querySelector('[data-admin-login]');
 const adminError = document.querySelector('[data-admin-error]');
-const ADMIN_SESSION_KEY = 'cnp-admin-session';
-const ATTACHMENT_DB = 'cnp-powertech-documents';
-const ATTACHMENT_STORE = 'attachments';
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
-const ADMIN_CREDENTIAL_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
-let attachmentDbPromise;
+const supabaseConfig = window.CNP_SUPABASE_CONFIG;
+const supabaseClient = supabaseConfig && window.supabase
+  ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.publishableKey, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+  })
+  : null;
+let adminSession = null;
 
 function t(source) {
   return window.CNP_I18N?.t(source) || source;
 }
 
-async function sha256(value) {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function openAttachmentDb() {
-  if (!attachmentDbPromise) {
-    attachmentDbPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(ATTACHMENT_DB, 1);
-      request.onupgradeneeded = () => {
-        const store = request.result.createObjectStore(ATTACHMENT_STORE, { keyPath: 'id' });
-        store.createIndex('productSlug', 'productSlug', { unique: false });
-      };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-  return attachmentDbPromise;
-}
-
-async function withAttachmentStore(mode, callback) {
-  const db = await openAttachmentDb();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ATTACHMENT_STORE, mode);
-    const store = transaction.objectStore(ATTACHMENT_STORE);
-    let result;
-    try { result = callback(store); } catch (error) { reject(error); return; }
-    transaction.oncomplete = () => resolve(result);
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () => reject(transaction.error);
-  });
-}
-
-function getAttachments(productSlug) {
-  return openAttachmentDb().then((db) => new Promise((resolve, reject) => {
-    const request = db.transaction(ATTACHMENT_STORE).objectStore(ATTACHMENT_STORE).index('productSlug').getAll(productSlug);
-    request.onsuccess = () => resolve(request.result.sort((a, b) => b.uploadedAt - a.uploadedAt));
-    request.onerror = () => reject(request.error);
-  }));
-}
-
-function getAttachment(id) {
-  return openAttachmentDb().then((db) => new Promise((resolve, reject) => {
-    const request = db.transaction(ATTACHMENT_STORE).objectStore(ATTACHMENT_STORE).get(id);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  }));
-}
-
 function isAdmin() {
-  return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'active';
+  return Boolean(adminSession?.user?.id === supabaseConfig?.adminUserId);
+}
+
+function storageFileName(name) {
+  const marker = '--';
+  return name.includes(marker) ? name.slice(name.indexOf(marker) + marker.length) : name;
+}
+
+function safeStorageName(name) {
+  return name.normalize('NFKC').replace(/[^\p{L}\p{N}._ -]/gu, '_').slice(0, 160) || 'attachment';
+}
+
+async function getAttachments(productSlug) {
+  if (!supabaseClient) throw new Error('Supabase is not configured.');
+  const { data, error } = await supabaseClient.storage
+    .from(supabaseConfig.bucket)
+    .list(productSlug, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+  if (error) throw error;
+  return (data || []).filter((file) => file.id).map((file) => ({
+    id: file.name,
+    path: `${productSlug}/${file.name}`,
+    name: storageFileName(file.name),
+    size: Number(file.metadata?.size || 0),
+    uploadedAt: Date.parse(file.created_at || file.updated_at || '') || 0,
+  }));
 }
 
 function fileExtension(name) {
@@ -217,14 +193,15 @@ async function renderAttachments() {
       const download = document.createElement('button');
       download.type = 'button';
       download.className = 'attachment-action';
-      download.dataset.downloadId = file.id;
+      download.dataset.downloadPath = file.path;
+      download.dataset.downloadName = file.name;
       download.textContent = t('다운로드');
       actions.append(download);
       if (isAdmin()) {
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'attachment-action attachment-action--delete';
-        remove.dataset.deleteId = file.id;
+        remove.dataset.deletePath = file.path;
         remove.textContent = t('삭제');
         actions.append(remove);
       }
@@ -316,14 +293,25 @@ attachmentManage?.addEventListener('click', () => {
 adminLogin?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = new FormData(adminLogin);
-  const [usernameHash, passwordHash] = await Promise.all([sha256(String(form.get('username'))), sha256(String(form.get('password')))]);
-  if (usernameHash === ADMIN_CREDENTIAL_HASH && passwordHash === ADMIN_CREDENTIAL_HASH) {
-    sessionStorage.setItem(ADMIN_SESSION_KEY, 'active');
+  const username = String(form.get('username') || '').trim();
+  const password = String(form.get('password') || '');
+  adminError.textContent = '';
+  if (!supabaseClient || username !== 'admin' || password !== 'admin') {
+    adminError.textContent = t('아이디 또는 비밀번호가 올바르지 않습니다.');
+    return;
+  }
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: supabaseConfig.adminEmail,
+    password: supabaseConfig.adminPassword,
+  });
+  if (!error && data.session?.user?.id === supabaseConfig.adminUserId) {
+    adminSession = data.session;
     closeAdminModal();
     syncAdminUi();
-    renderAttachments();
+    await renderAttachments();
     attachmentFile?.focus();
   } else {
+    if (data.session) await supabaseClient.auth.signOut();
     adminError.textContent = t('아이디 또는 비밀번호가 올바르지 않습니다.');
   }
 });
@@ -338,17 +326,19 @@ attachmentUpload?.addEventListener('submit', async (event) => {
   const file = attachmentFile.files?.[0];
   if (!file) { setAttachmentStatus(t('파일을 선택해 주세요.'), true); return; }
   if (file.size > MAX_ATTACHMENT_BYTES) { setAttachmentStatus(t('파일은 20MB 이하만 추가할 수 있습니다.'), true); return; }
+  if (!supabaseClient || !isAdmin() || !currentProductSlug) {
+    setAttachmentStatus(t('아이디 또는 비밀번호가 올바르지 않습니다.'), true);
+    return;
+  }
   try {
-    const record = {
-      id: `${currentProductSlug}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`,
-      productSlug: currentProductSlug,
-      name: file.name,
-      type: file.type || 'application/octet-stream',
-      size: file.size,
-      uploadedAt: Date.now(),
-      blob: file,
-    };
-    await withAttachmentStore('readwrite', (store) => store.put(record));
+    const unique = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+    const path = `${currentProductSlug}/${Date.now()}-${unique}--${safeStorageName(file.name)}`;
+    const { error } = await supabaseClient.storage.from(supabaseConfig.bucket).upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
+    });
+    if (error) throw error;
     attachmentUpload.reset();
     selectedFile.textContent = t('선택된 파일 없음');
     setAttachmentStatus(t('파일을 추가했습니다.'));
@@ -359,21 +349,26 @@ attachmentUpload?.addEventListener('submit', async (event) => {
 });
 
 attachmentList?.addEventListener('click', async (event) => {
-  const downloadButton = event.target.closest('[data-download-id]');
-  const deleteButton = event.target.closest('[data-delete-id]');
+  const downloadButton = event.target.closest('[data-download-path]');
+  const deleteButton = event.target.closest('[data-delete-path]');
   if (downloadButton) {
-    const file = await getAttachment(downloadButton.dataset.downloadId);
-    if (!file) return;
-    const url = URL.createObjectURL(file.blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = file.name;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      const { data, error } = await supabaseClient.storage.from(supabaseConfig.bucket).download(downloadButton.dataset.downloadPath);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadButton.dataset.downloadName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setAttachmentStatus(t('파일을 처리하지 못했습니다. 다시 시도해 주세요.'), true);
+    }
   }
   if (deleteButton && isAdmin() && confirm(t('이 파일을 삭제할까요?'))) {
     try {
-      await withAttachmentStore('readwrite', (store) => store.delete(deleteButton.dataset.deleteId));
+      const { error } = await supabaseClient.storage.from(supabaseConfig.bucket).remove([deleteButton.dataset.deletePath]);
+      if (error) throw error;
       setAttachmentStatus(t('파일을 삭제했습니다.'));
       await renderAttachments();
     } catch {
@@ -382,12 +377,25 @@ attachmentList?.addEventListener('click', async (event) => {
   }
 });
 
-document.querySelector('[data-admin-logout]')?.addEventListener('click', () => {
-  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+document.querySelector('[data-admin-logout]')?.addEventListener('click', async () => {
+  await supabaseClient?.auth.signOut();
+  adminSession = null;
   attachmentUpload.hidden = true;
   setAttachmentStatus();
   renderAttachments();
 });
+
+if (supabaseClient) {
+  supabaseClient.auth.getSession().then(({ data }) => {
+    adminSession = data.session?.user?.id === supabaseConfig.adminUserId ? data.session : null;
+    syncAdminUi();
+    if (currentProductSlug) renderAttachments();
+  });
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    adminSession = session?.user?.id === supabaseConfig.adminUserId ? session : null;
+    syncAdminUi();
+  });
+}
 
 const initial = new URLSearchParams(location.search).get('product'); if (initial) openProduct(initial);
 document.addEventListener('cnp:locale', () => {
