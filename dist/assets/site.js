@@ -296,13 +296,13 @@ adminLogin?.addEventListener('submit', async (event) => {
   const username = String(form.get('username') || '').trim();
   const password = String(form.get('password') || '');
   adminError.textContent = '';
-  if (!supabaseClient || username !== 'admin' || password !== 'admin') {
+  if (!supabaseClient || username !== 'admin' || !password) {
     adminError.textContent = t('아이디 또는 비밀번호가 올바르지 않습니다.');
     return;
   }
   const { data, error } = await supabaseClient.auth.signInWithPassword({
     email: supabaseConfig.adminEmail,
-    password: supabaseConfig.adminPassword,
+    password,
   });
   if (!error && data.session?.user?.id === supabaseConfig.adminUserId) {
     adminSession = data.session;

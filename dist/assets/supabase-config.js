@@ -4,5 +4,4 @@ window.CNP_SUPABASE_CONFIG = Object.freeze({
   bucket: 'product-files',
   adminEmail: 'admin@cnpowertech.local',
   adminUserId: '96266c33-c7e2-4b88-af3f-b646bf807580',
-  adminPassword: 'admin1',
 });
