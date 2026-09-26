@@ -163,6 +163,42 @@ button { color: inherit; }
 .btn--ghost { background: #fff; color: var(--navy); }
 .modal-close { position: absolute; right: 16px; top: 16px; z-index: 2; width: 42px; height: 42px; border: 1px solid var(--line); background: #fff; font-size: 1.4rem; cursor: pointer; }
 
+.attachments { margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); }
+.attachments-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.attachments-head h3 { margin: 4px 0 0; font-size: 1.28rem; }
+.attachment-manage { padding: 8px 0; border: 0; border-bottom: 1px solid currentColor; background: none; color: var(--blue); font-weight: 700; cursor: pointer; }
+.attachments-note { margin: 10px 0 18px; font-size: .9rem; }
+.attachment-list { display: grid; gap: 9px; }
+.attachment-item { min-width: 0; display: grid; grid-template-columns: 48px minmax(0,1fr) auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); background: #fff; }
+.file-icon { width: 44px; height: 48px; position: relative; display: grid; place-items: end center; padding-bottom: 7px; border: 1px solid #b9c8e7; background: #edf3ff; color: var(--blue); font-family: Manrope,sans-serif; font-size: .64rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.file-icon::after { content: ''; position: absolute; top: -1px; right: -1px; width: 12px; height: 12px; border-left: 1px solid #b9c8e7; border-bottom: 1px solid #b9c8e7; background: #fff; }
+.file-icon--pdf { border-color: #efb1b1; background: #fff0f0; color: #b42318; }
+.file-icon--doc, .file-icon--docx { border-color: #a9bfea; background: #eef4ff; color: #174ea6; }
+.file-icon--xls, .file-icon--xlsx { border-color: #9fd4b4; background: #edf9f1; color: #19713c; }
+.file-icon--zip { border-color: #d5c092; background: #fff8e6; color: #86610c; }
+.attachment-meta { min-width: 0; }
+.attachment-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.attachment-info { display: block; margin-top: 2px; color: #697180; font-family: Manrope,sans-serif; font-size: .74rem; }
+.attachment-actions { display: flex; align-items: center; gap: 7px; }
+.attachment-action { min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); background: #fff; color: var(--navy); font-size: .82rem; font-weight: 700; cursor: pointer; }
+.attachment-action--delete { color: #b42318; }
+.attachment-empty { margin: 0; padding: 18px; border: 1px dashed #c9d0db; text-align: center; font-size: .88rem; }
+.attachment-upload { margin-top: 14px; padding: 16px; background: var(--soft); }
+.file-picker { display: inline-flex; align-items: center; min-height: 42px; padding: 9px 13px; border: 1px solid var(--navy); background: #fff; color: var(--navy); font-weight: 700; cursor: pointer; }
+.file-picker input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.selected-file { display: block; margin: 9px 0 13px; color: var(--body); font-size: .84rem; overflow-wrap: anywhere; }
+.text-button { margin-left: 10px; padding: 8px 0; border: 0; border-bottom: 1px solid currentColor; background: none; color: var(--body); cursor: pointer; }
+.attachment-status, .admin-error { min-height: 1.4em; margin: 10px 0 0; color: #b42318; font-size: .84rem; }
+.attachment-status.success { color: #19713c; }
+.admin-modal { z-index: 120; }
+.admin-card { position: relative; width: min(440px,100%); padding: 42px; background: #fff; }
+.admin-card h2 { margin: 8px 0 10px; font-size: 2rem; }
+.admin-card > p { margin: 0 0 22px; color: var(--body); }
+.admin-card label { display: block; margin-top: 15px; font-weight: 700; }
+.admin-card label span { display: block; margin-bottom: 6px; font-size: .88rem; }
+.admin-card input { width: 100%; height: 46px; padding: 0 12px; border: 1px solid #bbc3cf; }
+.admin-card > .btn { width: 100%; margin-top: 14px; }
+
 .company-lead { display: grid; grid-template-columns: .8fr 1.2fr; gap: 90px; }
 .company-lead h2 { margin: 8px 0 0; font-size: clamp(2.4rem,5vw,4.4rem); line-height: 1.08; letter-spacing: -.05em; font-weight: 500; }
 .company-lead .body { font-size: 1.12rem; color: var(--body); }
@@ -232,6 +268,10 @@ button { color: inherit; }
   .modal-card { display: block; }
   .modal-visual { min-height: 300px; }
   .modal-copy { padding: 34px 24px; }
+  .attachment-item { grid-template-columns: 42px minmax(0,1fr); }
+  .file-icon { width: 40px; height: 44px; }
+  .attachment-actions { grid-column: 2; }
+  .admin-card { padding: 36px 24px; }
   .history-row { grid-template-columns: 90px 1fr; }
   .org-grid { grid-template-columns: repeat(2,1fr); }
   .support-row { grid-template-columns: 44px 1fr; }

@@ -87,6 +87,168 @@ const grid = document.querySelector('[data-product-grid]');
 const modal = document.querySelector('[data-product-modal]');
 let currentCategory = 'all';
 let currentProductSlug = null;
+const attachmentList = document.querySelector('[data-attachment-list]');
+const attachmentEmpty = document.querySelector('[data-attachment-empty]');
+const attachmentUpload = document.querySelector('[data-attachment-upload]');
+const attachmentFile = document.querySelector('[data-attachment-file]');
+const attachmentStatus = document.querySelector('[data-attachment-status]');
+const attachmentManage = document.querySelector('[data-attachment-manage]');
+const selectedFile = document.querySelector('[data-selected-file]');
+const adminModal = document.querySelector('[data-admin-modal]');
+const adminLogin = document.querySelector('[data-admin-login]');
+const adminError = document.querySelector('[data-admin-error]');
+const ADMIN_SESSION_KEY = 'cnp-admin-session';
+const ATTACHMENT_DB = 'cnp-powertech-documents';
+const ATTACHMENT_STORE = 'attachments';
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
+const ADMIN_CREDENTIAL_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+let attachmentDbPromise;
+
+function t(source) {
+  return window.CNP_I18N?.t(source) || source;
+}
+
+async function sha256(value) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function openAttachmentDb() {
+  if (!attachmentDbPromise) {
+    attachmentDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(ATTACHMENT_DB, 1);
+      request.onupgradeneeded = () => {
+        const store = request.result.createObjectStore(ATTACHMENT_STORE, { keyPath: 'id' });
+        store.createIndex('productSlug', 'productSlug', { unique: false });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  return attachmentDbPromise;
+}
+
+async function withAttachmentStore(mode, callback) {
+  const db = await openAttachmentDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ATTACHMENT_STORE, mode);
+    const store = transaction.objectStore(ATTACHMENT_STORE);
+    let result;
+    try { result = callback(store); } catch (error) { reject(error); return; }
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
+function getAttachments(productSlug) {
+  return openAttachmentDb().then((db) => new Promise((resolve, reject) => {
+    const request = db.transaction(ATTACHMENT_STORE).objectStore(ATTACHMENT_STORE).index('productSlug').getAll(productSlug);
+    request.onsuccess = () => resolve(request.result.sort((a, b) => b.uploadedAt - a.uploadedAt));
+    request.onerror = () => reject(request.error);
+  }));
+}
+
+function getAttachment(id) {
+  return openAttachmentDb().then((db) => new Promise((resolve, reject) => {
+    const request = db.transaction(ATTACHMENT_STORE).objectStore(ATTACHMENT_STORE).get(id);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  }));
+}
+
+function isAdmin() {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'active';
+}
+
+function fileExtension(name) {
+  const extension = name.includes('.') ? name.split('.').pop().toLowerCase() : 'file';
+  return extension.replace(/[^a-z0-9]/g, '').slice(0, 5) || 'file';
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function setAttachmentStatus(message = '', error = false) {
+  if (!attachmentStatus) return;
+  attachmentStatus.textContent = message;
+  attachmentStatus.classList.toggle('success', !error && Boolean(message));
+}
+
+function syncAdminUi() {
+  if (!attachmentUpload || !attachmentManage) return;
+  const active = isAdmin();
+  attachmentUpload.hidden = !active;
+  attachmentManage.textContent = t(active ? '관리 닫기' : '자료 관리');
+}
+
+async function renderAttachments() {
+  if (!attachmentList || !attachmentEmpty || !currentProductSlug) return;
+  attachmentList.replaceChildren();
+  try {
+    const files = await getAttachments(currentProductSlug);
+    attachmentEmpty.hidden = files.length > 0;
+    files.forEach((file) => {
+      const extension = fileExtension(file.name);
+      const item = document.createElement('div');
+      item.className = 'attachment-item';
+
+      const icon = document.createElement('span');
+      icon.className = `file-icon file-icon--${extension}`;
+      icon.textContent = extension;
+      icon.setAttribute('aria-hidden', 'true');
+
+      const meta = document.createElement('div');
+      meta.className = 'attachment-meta';
+      const name = document.createElement('span');
+      name.className = 'attachment-name';
+      name.textContent = file.name;
+      const info = document.createElement('span');
+      info.className = 'attachment-info';
+      info.textContent = `${extension.toUpperCase()} · ${formatFileSize(file.size)}`;
+      meta.append(name, info);
+
+      const actions = document.createElement('div');
+      actions.className = 'attachment-actions';
+      const download = document.createElement('button');
+      download.type = 'button';
+      download.className = 'attachment-action';
+      download.dataset.downloadId = file.id;
+      download.textContent = t('다운로드');
+      actions.append(download);
+      if (isAdmin()) {
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'attachment-action attachment-action--delete';
+        remove.dataset.deleteId = file.id;
+        remove.textContent = t('삭제');
+        actions.append(remove);
+      }
+      item.append(icon, meta, actions);
+      attachmentList.append(item);
+    });
+  } catch {
+    attachmentEmpty.hidden = false;
+    attachmentEmpty.textContent = t('파일을 처리하지 못했습니다. 다시 시도해 주세요.');
+  }
+  syncAdminUi();
+}
+
+function openAdminModal() {
+  if (!adminModal) return;
+  adminModal.classList.add('open');
+  adminError.textContent = '';
+  adminLogin?.reset();
+  setTimeout(() => adminLogin?.elements.username?.focus(), 0);
+}
+
+function closeAdminModal() {
+  adminModal?.classList.remove('open');
+}
 
 function localizeProduct(product) {
   const locale = window.CNP_I18N?.locale || 'ko';
@@ -116,6 +278,8 @@ function openProduct(slug) {
   modal.querySelector('[data-modal-inquiry]').href = `${root}/contact/?product=${encodeURIComponent(copy.name)}`;
   modal.classList.add('open'); document.body.classList.add('modal-open');
   history.replaceState(null, '', `?product=${p.slug}`);
+  setAttachmentStatus();
+  renderAttachments();
 }
 
 renderProducts();
@@ -133,12 +297,103 @@ document.querySelectorAll('[data-filter]').forEach((button) => button.addEventLi
 }));
 grid?.addEventListener('click', (e) => { const card=e.target.closest('[data-slug]'); if(card) openProduct(card.dataset.slug); });
 grid?.addEventListener('keydown', (e) => { if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-slug]')) { e.preventDefault(); openProduct(e.target.dataset.slug); } });
-function closeModal() { modal?.classList.remove('open'); document.body.classList.remove('modal-open'); history.replaceState(null,'',location.pathname); }
+function closeModal() { closeAdminModal(); modal?.classList.remove('open'); document.body.classList.remove('modal-open'); history.replaceState(null,'',location.pathname); }
 document.querySelectorAll('[data-modal-close]').forEach((b)=>b.addEventListener('click',closeModal));
 modal?.addEventListener('click',(e)=>{if(e.target===modal) closeModal();});
-document.addEventListener('keydown',(e)=>{if(e.key==='Escape') closeModal();});
+document.querySelectorAll('[data-admin-close]').forEach((button) => button.addEventListener('click', closeAdminModal));
+adminModal?.addEventListener('click', (event) => { if (event.target === adminModal) closeAdminModal(); });
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape') adminModal?.classList.contains('open') ? closeAdminModal() : closeModal();});
+
+attachmentManage?.addEventListener('click', () => {
+  if (isAdmin()) {
+    attachmentUpload.hidden = !attachmentUpload.hidden;
+    attachmentManage.textContent = t(attachmentUpload.hidden ? '자료 관리' : '관리 닫기');
+  } else {
+    openAdminModal();
+  }
+});
+
+adminLogin?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = new FormData(adminLogin);
+  const [usernameHash, passwordHash] = await Promise.all([sha256(String(form.get('username'))), sha256(String(form.get('password')))]);
+  if (usernameHash === ADMIN_CREDENTIAL_HASH && passwordHash === ADMIN_CREDENTIAL_HASH) {
+    sessionStorage.setItem(ADMIN_SESSION_KEY, 'active');
+    closeAdminModal();
+    syncAdminUi();
+    renderAttachments();
+    attachmentFile?.focus();
+  } else {
+    adminError.textContent = t('아이디 또는 비밀번호가 올바르지 않습니다.');
+  }
+});
+
+attachmentFile?.addEventListener('change', () => {
+  selectedFile.textContent = attachmentFile.files?.[0]?.name || t('선택된 파일 없음');
+  setAttachmentStatus();
+});
+
+attachmentUpload?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const file = attachmentFile.files?.[0];
+  if (!file) { setAttachmentStatus(t('파일을 선택해 주세요.'), true); return; }
+  if (file.size > MAX_ATTACHMENT_BYTES) { setAttachmentStatus(t('파일은 20MB 이하만 추가할 수 있습니다.'), true); return; }
+  try {
+    const record = {
+      id: `${currentProductSlug}-${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}`,
+      productSlug: currentProductSlug,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      uploadedAt: Date.now(),
+      blob: file,
+    };
+    await withAttachmentStore('readwrite', (store) => store.put(record));
+    attachmentUpload.reset();
+    selectedFile.textContent = t('선택된 파일 없음');
+    setAttachmentStatus(t('파일을 추가했습니다.'));
+    await renderAttachments();
+  } catch {
+    setAttachmentStatus(t('파일을 처리하지 못했습니다. 다시 시도해 주세요.'), true);
+  }
+});
+
+attachmentList?.addEventListener('click', async (event) => {
+  const downloadButton = event.target.closest('[data-download-id]');
+  const deleteButton = event.target.closest('[data-delete-id]');
+  if (downloadButton) {
+    const file = await getAttachment(downloadButton.dataset.downloadId);
+    if (!file) return;
+    const url = URL.createObjectURL(file.blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  if (deleteButton && isAdmin() && confirm(t('이 파일을 삭제할까요?'))) {
+    try {
+      await withAttachmentStore('readwrite', (store) => store.delete(deleteButton.dataset.deleteId));
+      setAttachmentStatus(t('파일을 삭제했습니다.'));
+      await renderAttachments();
+    } catch {
+      setAttachmentStatus(t('파일을 처리하지 못했습니다. 다시 시도해 주세요.'), true);
+    }
+  }
+});
+
+document.querySelector('[data-admin-logout]')?.addEventListener('click', () => {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  attachmentUpload.hidden = true;
+  setAttachmentStatus();
+  renderAttachments();
+});
+
 const initial = new URLSearchParams(location.search).get('product'); if (initial) openProduct(initial);
 document.addEventListener('cnp:locale', () => {
   renderProducts(currentCategory);
-  if (currentProductSlug && modal?.classList.contains('open')) openProduct(currentProductSlug);
+  if (currentProductSlug && modal?.classList.contains('open')) {
+    openProduct(currentProductSlug);
+    renderAttachments();
+  }
 });
