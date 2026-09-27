@@ -105,6 +105,7 @@ const supabaseClient = supabaseConfig && window.supabase
   })
   : null;
 let adminSession = null;
+let attachmentRenderId = 0;
 
 function t(source) {
   return window.CNP_I18N?.t(source) || source;
@@ -164,10 +165,14 @@ function syncAdminUi() {
 
 async function renderAttachments() {
   if (!attachmentList || !attachmentEmpty || !currentProductSlug) return;
+  const renderId = ++attachmentRenderId;
+  const productSlug = currentProductSlug;
   attachmentList.replaceChildren();
   try {
-    const files = await getAttachments(currentProductSlug);
+    const files = await getAttachments(productSlug);
+    if (renderId !== attachmentRenderId || productSlug !== currentProductSlug) return;
     attachmentEmpty.hidden = files.length > 0;
+    const fragment = document.createDocumentFragment();
     files.forEach((file) => {
       const extension = fileExtension(file.name);
       const item = document.createElement('div');
@@ -206,9 +211,11 @@ async function renderAttachments() {
         actions.append(remove);
       }
       item.append(icon, meta, actions);
-      attachmentList.append(item);
+      fragment.append(item);
     });
+    attachmentList.replaceChildren(fragment);
   } catch {
+    if (renderId !== attachmentRenderId || productSlug !== currentProductSlug) return;
     attachmentEmpty.hidden = false;
     attachmentEmpty.textContent = t('파일을 처리하지 못했습니다. 다시 시도해 주세요.');
   }
