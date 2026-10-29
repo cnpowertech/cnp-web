@@ -62,6 +62,52 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: .12 });
 document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
+const heroSlider = document.querySelector('[data-hero-slider]');
+if (heroSlider) {
+  const slides = [...heroSlider.querySelectorAll('[data-hero-slide]')];
+  const dots = [...heroSlider.querySelectorAll('[data-hero-dot]')];
+  const currentLabel = heroSlider.querySelector('[data-hero-current]');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let currentSlide = 0;
+  let heroTimer = null;
+
+  function showHeroSlide(index) {
+    currentSlide = (index + slides.length) % slides.length;
+    slides.forEach((slide, slideIndex) => {
+      const active = slideIndex === currentSlide;
+      slide.classList.toggle('active', active);
+      slide.setAttribute('aria-hidden', String(!active));
+    });
+    dots.forEach((dot, dotIndex) => {
+      const active = dotIndex === currentSlide;
+      dot.classList.toggle('active', active);
+      active ? dot.setAttribute('aria-current', 'true') : dot.removeAttribute('aria-current');
+    });
+    if (currentLabel) currentLabel.textContent = String(currentSlide + 1).padStart(2, '0');
+  }
+
+  function stopHeroSlider() {
+    if (heroTimer) window.clearInterval(heroTimer);
+    heroTimer = null;
+  }
+
+  function startHeroSlider() {
+    stopHeroSlider();
+    if (!reduceMotion && !document.hidden) heroTimer = window.setInterval(() => showHeroSlide(currentSlide + 1), 6000);
+  }
+
+  heroSlider.querySelector('[data-hero-prev]')?.addEventListener('click', () => { showHeroSlide(currentSlide - 1); startHeroSlider(); });
+  heroSlider.querySelector('[data-hero-next]')?.addEventListener('click', () => { showHeroSlide(currentSlide + 1); startHeroSlider(); });
+  dots.forEach((dot) => dot.addEventListener('click', () => { showHeroSlide(Number(dot.dataset.heroDot)); startHeroSlider(); }));
+  heroSlider.addEventListener('mouseenter', stopHeroSlider);
+  heroSlider.addEventListener('mouseleave', startHeroSlider);
+  heroSlider.addEventListener('focusin', stopHeroSlider);
+  heroSlider.addEventListener('focusout', startHeroSlider);
+  document.addEventListener('visibilitychange', () => document.hidden ? stopHeroSlider() : startHeroSlider());
+  showHeroSlide(0);
+  startHeroSlider();
+}
+
 const products = [
   {slug:'polymer-recloser',category:'overhead',name:'배전용 RECLOSER',en:'Polymer Recloser',vi:'Máy đóng cắt tự đóng lại polymer',es:'Reconectador de polímero',image:'protection-recloser.webp',desc:'22.9kV-Y 가공 배전선로에 사용하는 디지털 제어 방식의 배전 자동화용 Recloser.',descEn:'Digitally controlled recloser for 22.9kV-Y overhead distribution lines.',descVi:'Máy đóng cắt tự đóng lại điều khiển kỹ thuật số cho đường dây phân phối trên không 22,9kV-Y.',descEs:'Reconectador de control digital para líneas aéreas de distribución de 22,9kV-Y.'},
   {slug:'eco-switch',category:'overhead',name:'에폭시절연 부하개폐기',en:'Epoxy Insulated Load Break Switch',vi:'Dao cắt tải cách điện epoxy',es:'Seccionador bajo carga aislado en epoxi',image:'eco-switch.webp',desc:'가공 및 구내 배전선로의 구분과 분기에 사용하는 에폭시 절연 개폐기.',descEn:'Epoxy-insulated switch for sectionalizing and branching overhead and private distribution lines.',descVi:'Dao cắt cách điện epoxy dùng để phân đoạn và rẽ nhánh đường dây phân phối trên không và nội bộ.',descEs:'Interruptor aislado en epoxi para seccionar y derivar líneas aéreas y redes privadas.'},
