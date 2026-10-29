@@ -73,11 +73,15 @@ button { color: inherit; }
 .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(2,11,31,.86) 0%, rgba(2,15,42,.57) 48%, rgba(2,15,42,.10) 78%), linear-gradient(0deg, rgba(1,8,23,.56), transparent 50%); }
 .hero-content { position: relative; z-index: 1; padding: 0 0 74px; }
 .hero-kicker { font-family: Manrope, sans-serif; font-size: .84rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #aecdff; }
-.hero h1 { max-width: 870px; margin: 16px 0 24px; font-size: clamp(3.25rem, 7vw, 6.9rem); font-weight: 500; line-height: .98; letter-spacing: -.065em; }
-.hero h1 span { display: block; color: #9dbfff; }
+.hero h1 { max-width: 920px; margin: 16px 0 24px; font-size: clamp(3.1rem, 5.4vw, 5.7rem); font-weight: 600; line-height: 1.08; letter-spacing: -.06em; }
 .hero-copy { max-width: 620px; margin: 0; font-size: 1.13rem; color: rgba(255,255,255,.82); }
+.hero-copy--secondary { margin-top: 12px; }
+.hero-english { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 19px 0 0; color: rgba(255,255,255,.62); font-size: .82rem; }
+.hero-english strong { color: #aecdff; font-family: Manrope, sans-serif; letter-spacing: .025em; }
 .hero-meta { margin-top: 44px; display: flex; align-items: center; gap: 22px; }
+.hero-actions { display: flex; gap: 10px; }
 .hero-cta { display: inline-flex; align-items: center; gap: 28px; padding: 15px 20px; background: #fff; color: var(--navy); font-weight: 700; }
+.hero-cta--outline { border: 1px solid rgba(255,255,255,.6); background: rgba(3,17,45,.18); color: #fff; }
 .hero-scroll { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,.66); font-family: Manrope, sans-serif; font-size: .72rem; letter-spacing: .12em; }
 .hero-scroll::before { content: ''; width: 38px; height: 1px; background: rgba(255,255,255,.55); }
 
@@ -254,10 +258,13 @@ button { color: inherit; }
   .section { padding: 78px 0; }
   .section-head { display: block; }
   .section-head p { margin-top: 18px; }
-  .hero h1 { font-size: clamp(3rem,17vw,4.7rem); }
+  .hero h1 { margin: 12px 0 18px; font-size: clamp(3rem,17vw,4.7rem); }
   .hero-bg { object-position: 62% center; }
-  .hero-content { padding-bottom: 42px; }
-  .hero-meta { flex-direction: column; align-items: flex-start; }
+  .hero-content { padding-top: 38px; padding-bottom: 36px; }
+  .hero-copy--secondary { margin-top: 8px; }
+  .hero-english { margin-top: 14px; }
+  .hero-meta { margin-top: 28px; flex-direction: column; align-items: flex-start; }
+  .hero-actions { flex-wrap: wrap; }
   .intro-grid { gap: 52px; }
   .stat { min-height: 145px; padding: 22px; }
   .stat strong { font-size: 2.25rem; }
@@ -286,6 +293,9 @@ button { color: inherit; }
   .lang-select { width: 104px; flex-basis: 104px; height: 40px; padding: 0 22px 0 9px; font-size: .74rem; }
   .menu-btn { width: 42px; height: 42px; flex-basis: 42px; }
   .mobile-panel { padding: 20px 16px; }
-  .hero h1 { font-size: clamp(2.7rem, 16vw, 4.1rem); overflow-wrap: anywhere; }
+  .hero h1 { font-size: clamp(2.55rem, 12vw, 3.65rem); overflow-wrap: anywhere; }
+  .hero-copy br { display: none; }
+  .hero-actions { width: 100%; }
+  .hero-cta { flex: 1 1 150px; justify-content: space-between; gap: 14px; }
   .page-hero h1, .section-head h2, .company-lead h2, .support-title h2 { overflow-wrap: anywhere; }
 }
