@@ -95,8 +95,11 @@ button { color: inherit; }
 .hero-slider-count b { color: #fff; font-weight: 600; }
 
 .intro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: center; }
-.intro-copy h2 { margin: 12px 0 24px; font-size: clamp(2.4rem, 4vw, 4.2rem); line-height: 1.12; letter-spacing: -.05em; font-weight: 500; }
+.intro-copy h2 { margin: 12px 0 24px; font-size: clamp(2.35rem, 3.5vw, 3.65rem); line-height: 1.12; letter-spacing: -.05em; font-weight: 500; word-break: keep-all; }
 .intro-copy p { color: var(--body); font-size: 1.05rem; }
+.intro-body { max-width: 610px; margin-bottom: 30px; }
+.intro-body p { margin: 0; }
+.intro-body p + p { margin-top: 12px; }
 .stats { display: grid; grid-template-columns: repeat(2,1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .stat { min-height: 180px; padding: 30px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; }
 .stat strong { font-family: Manrope, sans-serif; color: var(--blue); font-size: 3.1rem; font-weight: 500; letter-spacing: -.05em; }
@@ -276,6 +279,7 @@ button { color: inherit; }
   .hero-actions { flex-wrap: wrap; }
   .hero-slider-controls { right: 16px; bottom: 14px; gap: 10px; }
   .intro-grid { gap: 52px; }
+  .intro-copy h2 { font-size: clamp(2.25rem, 10vw, 3.25rem); }
   .stat { min-height: 145px; padding: 22px; }
   .stat strong { font-size: 2.25rem; }
   .category-grid, .support-grid, .product-grid, .process { grid-template-columns: 1fr; }
