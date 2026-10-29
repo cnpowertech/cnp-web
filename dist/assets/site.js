@@ -31,7 +31,7 @@ const footer = `
     <div class="footer-grid">
       <div><img class="footer-logo" src="${root}/assets/cnpowertech.png" alt="시앤파워텍"><p>배전선로용 개폐기와 변압기를 제조합니다.</p></div>
       <div><h4>바로가기</h4><ul><li><a href="${root}/company/">회사소개</a></li><li><a href="${root}/products/">제품소개</a></li><li><a href="${root}/support/">서비스·지원</a></li></ul></div>
-      <div><h4>시앤파워텍㈜</h4><ul><li>대표이사 오전열</li><li>전라남도 나주시 왕곡면 혁신산단5길 107</li><li>T 031-351-6338</li><li>F 031-351-6394</li></ul></div>
+      <div><h4>시앤파워텍㈜</h4><ul><li>대표이사 오전열</li><li>[본사] 전라남도 나주시 왕곡면 혁신산단 5길 107</li><li>[지사] 경기도 화성시 장안면 수촌길 119-8번지</li><li>T. 031-351-6337</li><li>F. 031-351-6394</li></ul></div>
     </div>
     <div class="copyright">COPYRIGHT © 2026 C&amp;P INC. ALL RIGHTS RESERVED.</div>
   </div></footer>`;

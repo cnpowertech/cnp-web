@@ -32,6 +32,8 @@
     '바로가기': { en: 'Quick links', vi: 'Liên kết nhanh', es: 'Enlaces rápidos' },
     '대표이사 오전열': { en: 'CEO Oh Jeon-yeol', vi: 'Giám đốc điều hành Oh Jeon-yeol', es: 'Director general Oh Jeon-yeol' },
     '전라남도 나주시 왕곡면 혁신산단5길 107': { en: '107, Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Korea', vi: '107 Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Hàn Quốc', es: '107 Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Corea' },
+    '[본사] 전라남도 나주시 왕곡면 혁신산단 5길 107': { en: '[Head office] 107, Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Korea', vi: '[Trụ sở chính] 107 Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Hàn Quốc', es: '[Sede central] 107 Hyeoksinsandan 5-gil, Wanggok-myeon, Naju-si, Jeollanam-do, Corea' },
+    '[지사] 경기도 화성시 장안면 수촌길 119-8번지': { en: '[Branch] 119-8, Suchon-gil, Jangan-myeon, Hwaseong-si, Gyeonggi-do, Korea', vi: '[Chi nhánh] 119-8 Suchon-gil, Jangan-myeon, Hwaseong-si, Gyeonggi-do, Hàn Quốc', es: '[Sucursal] 119-8 Suchon-gil, Jangan-myeon, Hwaseong-si, Gyeonggi-do, Corea' },
     '전력의 안정적인': { en: 'Powering a', vi: 'Kiến tạo dòng điện', es: 'Impulsamos un futuro' },
     '흐름을 만듭니다': { en: 'reliable future', vi: 'ổn định và tin cậy', es: 'energético confiable' },
     '시앤파워텍은 개폐기와 변압기를 개발·생산하는': { en: 'C&P Powertech develops and manufactures switches and transformers', vi: 'C&P Powertech phát triển và sản xuất thiết bị đóng cắt và máy biến áp', es: 'C&P Powertech desarrolla y fabrica interruptores y transformadores' },
